@@ -11,7 +11,7 @@ if __name__ == '__main__':
 	for location in CONFIG["locations"]:
 		wc = Wizcal(city=location[0], country=location[1])
 		calendars = wc.get_calendar_data()
-		print("%s" % (location.upper()))
+		print("%s" % (location[0].upper()))
 		for events in calendars:
 			name = events["EVENT_NAME"]
 			address = events["ADDRESS1"]
@@ -25,17 +25,17 @@ if __name__ == '__main__':
 			attendees = CONFIG["guest_list"]
 			summary = "%s - %s (%s)" % (name, eventFormat, store)
 			desc =""" 
-			Venue: %s
-			Format: %s
+Venue: %s
+Format: %s
 
-			ADD: %s
+ADD: %s
 
-			P: %s
-			E: %s
-			W: %s
+P: %s
+E: %s
+W: %s
 
-			gMap: %s""" % (store, eventFormat, address,
-				phone, email, web, gMap)
+gMap: %s""" % (store, eventFormat, address,
+	phone, email, web, gMap)
 
 			wc.create_new_event(summary, address, desc, date, attendees)
 
