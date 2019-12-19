@@ -36,7 +36,7 @@ class Wizcal(object):
 		# Convert the location to a long/lat
 		geolocator = Nominatim(user_agent='myapplication')
 		location = geolocator.geocode("%s" % (city))
-		print(current_timestamp)
+
 		# Build the parameter list
 		params = {
 			"start":"0",
@@ -56,12 +56,22 @@ class Wizcal(object):
 			"program":"0"
 		}
 		
+		# Construct tthe final POST data and url.
 		self.data = parse.urlencode(params).encode()				
 		self.url = base_url
 
+		# Auth with Google API.
 		self.google_api_auth()
 
 	def google_api_auth(self):
+		"""Auth with Google.
+		
+		Check if there is a local cached auth token in token.pickle.
+		If there's no cached token, then generate a new one via 
+		webflow authentication.
+		Finally dump the token in a pickle and then build the API 
+		client with the credentials.
+		"""
 		creds = None
 		if os.path.exists('token.pickle'):
 			with open('token.pickle', 'rb') as token:
@@ -81,6 +91,15 @@ class Wizcal(object):
 		self.service = build('calendar', 'v3', credentials=creds)
 
 	def get_google_calendar_events(self):
+		"""Get the current list of gCal events.
+		
+		This allows us to check for events already added to the calendar. Can
+		be extended to permit updating of changed events.
+		TODO - Extend functionality for updating existing events.
+
+		Returns:
+			list -- A unique list of the Google Calendar event's Summary.
+		"""
 		page_token = None
 		now = datetime.datetime.now().isoformat() + 'Z'
 		while True:
@@ -93,6 +112,18 @@ class Wizcal(object):
 		return events.get('items', [])
 
 	def get_gcal_date_events(self, summary, events):
+		"""Compare an event with all Google Calendar events.
+		
+		Take an event Summary and iterate through all gCalendar events.
+		TODO: Probably more efficient to use a set() here.
+		
+		Arguments:
+			summary {string} -- [description]
+			events {list} -- List of Google Calendar events.
+		
+		Returns:
+			list -- A list of matching events.
+		"""
 		lst = []		
 		for event in events:
 			if event.get('summary'):
@@ -102,6 +133,16 @@ class Wizcal(object):
 		return lst
 
 	def already_exists(self, new_event):
+		"""Check for events that already exist.
+		
+		Return True or False if an event exists.
+		
+		Arguments:
+			new_event {dict} -- A dict describing a new event.
+		
+		Returns:
+			bool -- If an event exists or not.
+		"""
 		events = self.get_gcal_date_events(new_event['summary'], self.get_google_calendar_events())
 		event_list = [new_event['summary'] for new_event in events]		
 		if new_event['summary'] not in event_list:
@@ -110,6 +151,14 @@ class Wizcal(object):
 			return True
 
 	def get_calendar_data(self):
+		"""Query Wizkids Calendar (base url) with the POST data.
+		
+		Set the appropriate headers and then create a HTTP request
+		to the Wizkids Calendar endpoint.
+		
+		Returns:
+			dict -- Event data for the given query.
+		"""
 		data = self.data
 		headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
 		req = request.Request(self.url, data=data)		
@@ -121,7 +170,18 @@ class Wizcal(object):
 		return json_cal
 
 	def create_new_event(self, summary="HeroClix Event", location="Somewhere", description="Get ready to rumble",start_raw=None, attendees = [{'email':'nobody@gmail.com'}]):
+		"""Create a new event in Google Calendar.
 		
+		Takes the given parameters for an event and builds an event dictionary
+		to create an event in Google Calendar via the Google API.
+		
+		Keyword Arguments:
+			summary {str} -- Event title/summary. (default: {"HeroClix Event"})
+			location {str} -- Event location. (default: {"Somewhere"})
+			description {str} -- Longform details of event. (default: {"Get ready to rumble"})
+			start_raw {str} -- Start time as a datetime-parsable string. (default: {None})
+			attendees {list} -- List of guests to invite. (default: {[{'email':'nobody@gmail.com'}]})
+		"""
 		start_datetime = datetime.datetime.strptime(start_raw, "%Y-%m-%d^%H:%M %p")		
 		end = datetime.datetime.strptime(start_raw, "%Y-%m-%d^%H:%M %p") + datetime.timedelta(hours=3)
 
