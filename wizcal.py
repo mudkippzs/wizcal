@@ -11,32 +11,39 @@ from google.auth.transport.requests import Request
 from urllib import request, parse
 from pprint import pprint as pp
 
-# If modifying these scopes, delete the file token.pickle.
+# Set the scope of access for Google API. If modifying these scopes, delete the file: token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 class Wizcal(object):
-	@property
-	def endpoint_status(self):
-		return self.get_endpoint_status()
+	"""Wizkids Event Calendar/gCalendar Syncing.
+	
+	A wrapper for an event calendar on Wizkids.com for Heroclix. Query the
+	calendar and parse the results and then sync to a Google Calendar via
+	Google API.
+	"""
 	
 	def __init__(self, city="portland", country="United+States", distance=25):
-			
+		"""Instantiate a Wizcal object with a given location and max distance from location.
+		
+		Keyword Arguments:
+			city {str} -- Filter by city (default: {"portland"})
+			country {str} -- Filter by country (default: {"United+States"})
+			distance {number} -- FIlter by distance (default: {25})
+		"""
+		
 		base_url = "https://win.wizkids.com/actions/doSearch.php"
-
-		query_string = {
-		"s":"3",
-		"v": "-1",
-		}
-
+		current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d+%H:%M:%S")
+		# Convert the location to a long/lat
 		geolocator = Nominatim(user_agent='myapplication')
 		location = geolocator.geocode("%s" % (city))
-
+		print(current_timestamp)
+		# Build the parameter list
 		params = {
 			"start":"0",
 			"count":"12",
 			"cLatitude": location.latitude,
 			"cLongitude": location.longitude,
-			"dateTime": "2019-12-16+21:3:54",
+			"dateTime": current_timestamp,
 			"storeevent":"1",
 			"addressevent":""	,
 			"zipevent": city,
